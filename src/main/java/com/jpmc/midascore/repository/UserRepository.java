@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<UserRecord, Long> {
     Optional<UserRecord> findByName(String name);
-    
+    Optional<UserRecord> findByNameIgnoreCase(String name);
 }

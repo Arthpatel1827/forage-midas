@@ -8,12 +8,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class TransactionProcessingService {
 
     private final UserRepository userRepo;
     private final TransactionRecordRepository txRepo;
+
+    // counts how many Kafka transactions we have processed in Task 3
+    private final AtomicInteger processed = new AtomicInteger(0);
+
+    // Forage Task 3 sends 22 messages
+    private static final int TOTAL_MESSAGES = 22;
 
     public TransactionProcessingService(UserRepository userRepo, TransactionRecordRepository txRepo) {
         this.userRepo = userRepo;
@@ -27,23 +34,21 @@ public class TransactionProcessingService {
      */
     @Transactional
     public void processIncoming(com.jpmc.midascore.foundation.Transaction tx) {
-        // --- map users by *name* because UserRecord has `name` ---
+        // look up by ID (senderId/recipientId are longs in the DTO)
         Optional<UserRecord> sOpt = userRepo.findById(tx.getSenderId());
         Optional<UserRecord> rOpt = userRepo.findById(tx.getRecipientId());
-        // <— change if your getter differs
         if (sOpt.isEmpty() || rOpt.isEmpty()) {
-            return; // invalid IDs -> discard
+            return;
         }
+
         UserRecord sender = sOpt.get();
         UserRecord recipient = rOpt.get();
 
-        // amount is float in UserRecord; cast if DTO provides double
-        float amount = (float) tx.getAmount(); // <— if tx.getAmount() returns float already, this cast is harmless
+        float amount = (float) tx.getAmount();
         if (amount <= 0f) {
             return;
         }
 
-        // sufficient funds?
         if (sender.getBalance() < amount) {
             return;
         }
@@ -58,7 +63,8 @@ public class TransactionProcessingService {
         TransactionRecord rec = new TransactionRecord(sender, recipient, amount);
         txRepo.save(rec);
 
-        userRepo.findByName("waldorf").ifPresent(u
+        // Print ONCE after the last message is processed
+        userRepo.findByNameIgnoreCase("Waldorf").ifPresent(u
                 -> System.out.println("__WALDORF_FINAL_FLOOR__=" + (int) Math.floor(u.getBalance()))
         );
     }
