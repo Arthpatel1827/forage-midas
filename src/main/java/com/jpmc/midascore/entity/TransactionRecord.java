@@ -22,6 +22,10 @@ public class TransactionRecord {
     @Column(nullable = false)
     private float amount;
 
+    // NEW: incentive awarded for this transaction (null or >= 0)
+    @Column(name = "incentive", nullable = true)
+    private Float incentive;   // boxed so it can be null in DB
+
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -38,4 +42,8 @@ public class TransactionRecord {
     public UserRecord getRecipient() { return recipient; }
     public float getAmount() { return amount; }
     public Instant getCreatedAt() { return createdAt; }
+
+    // NEW: accessor/mutator for incentive
+    public Float getIncentive() { return incentive; }
+    public void setIncentive(Float incentive) { this.incentive = incentive; }
 }
